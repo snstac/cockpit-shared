@@ -1,0 +1,44 @@
+{
+  "name": "@snstac/cockpit-shared",
+  "version": "1.0.0",
+  "description": "Shared React/TypeScript source modules for Sensors & Signals cockpit plugins (service card, TLS upload card, systemd EnvironmentFile helpers).",
+  "type": "module",
+  "main": "src/index.ts",
+  "repository": "git@github.com:snstac/cockpit-shared.git",
+  "author": "Greg Albrecht <gba@snstac.com>",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 16"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eslint": "eslint src/",
+    "eslint:fix": "eslint --fix src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@patternfly/react-core": "6.1.0",
+    "react": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.13",
+    "@typescript-eslint/eslint-plugin": "8.40.0",
+    "eslint": "8.57.1",
+    "eslint-config-standard": "17.1.0",
+    "eslint-config-standard-jsx": "11.0.0",
+    "eslint-config-standard-react": "13.0.0",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-node": "11.1.0",
+    "eslint-plugin-promise": "6.6.0",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "typescript": "5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

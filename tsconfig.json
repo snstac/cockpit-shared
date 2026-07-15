@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": true,
+    "jsx": "react",
+    "lib": [
+      "dom",
+      "es2020"
+    ],
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2020"
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
