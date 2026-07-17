@@ -1,6 +1,6 @@
 {
   "name": "@snstac/cockpit-shared",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Shared React/TypeScript source modules for Sensors & Signals cockpit plugins (service card, TLS upload card, systemd EnvironmentFile helpers).",
   "type": "module",
   "main": "src/index.ts",

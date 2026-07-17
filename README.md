@@ -9,7 +9,7 @@ family of [Cockpit](https://cockpit-project.org/) plugins
 | Module | Exports | Purpose |
 | --- | --- | --- |
 | `src/serviceCard.tsx` | `ServiceManagementCard`, `ToastMessage` | systemd unit status + start/stop/restart/enable/disable card, driven by a `serviceName` prop |
-| `src/tlsCard.tsx` | `TlsUploadCard` | Expandable TLS certificate upload card; parameterized by `tlsDir`, `keyUser`, `testIdPrefix`, and optional `intro` text |
+| `src/tlsCard.tsx` | `TlsUploadCard` | Expandable TLS certificate upload card; parameterized by `tlsDir`, `keyUser`, `testIdPrefix`, optional `className` (Card CSS class; defaults to `` `${testIdPrefix}-expandable-card` ``), and optional `intro` text |
 | `src/envDefaultFile.ts` | `parseEnvDefault`, `serializeEnvDefault`, `shellQuoteValue`, `defaultFormFromConf`, `mergeFormValues`, `DefaultEnvLine` | Parse/serialize systemd `EnvironmentFile` (`/etc/default/<svc>`) key=value files while preserving comments, blanks, unknown keys, and `export` prefixes. `serializeEnvDefault` takes an optional trailing `addedByComment` (default `# Added by Cockpit`) |
 | `src/types.ts` | `EnvVarDefinition`, `EnvVarData` | Configuration parameter type definitions |
 
@@ -25,7 +25,7 @@ Add the dependency:
 
 ```json
 "dependencies": {
-    "@snstac/cockpit-shared": "github:snstac/cockpit-shared#v1.0.0"
+    "@snstac/cockpit-shared": "github:snstac/cockpit-shared#v1.1.0"
 }
 ```
 

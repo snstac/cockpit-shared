@@ -22,6 +22,8 @@ type TlsUploadCardProps = {
     keyUser: string;
     /** Prefix for data-testid / element ids / CSS class, e.g. "aiscot". */
     testIdPrefix: string;
+    /** CSS class for the Card; defaults to `${testIdPrefix}-expandable-card`. */
+    className?: string;
     /** Trailing intro sentence rendered after "Upload PEM bundles to <tlsDir>.". */
     intro?: React.ReactNode;
     onToast: (t: ToastMessage) => void;
@@ -32,6 +34,7 @@ export function TlsUploadCard({
     tlsDir,
     keyUser,
     testIdPrefix,
+    className,
     intro,
     onToast,
     onInstalledPaths,
@@ -127,7 +130,7 @@ export function TlsUploadCard({
     return (
         <Card
             isExpanded={expanded}
-            className={`${testIdPrefix}-expandable-card`}
+            className={className ?? `${testIdPrefix}-expandable-card`}
             data-testid={`${testIdPrefix}-tls-card`}
         >
             <CardHeader
