@@ -7,7 +7,9 @@
 // byte-for-byte identical). None of them referenced the AryaOS Product Suite
 // design tokens, so the console had drifted from the kit and from aryaos.org:
 //
-//   accent      #35a58f teal      -> kit says Signal Orange #E4610F
+//   accent      #35a58f teal      -> Signal Orange #E4610F for FILLS,
+//                                    Okabe-Ito blue for interactive text
+//                                    (see the two-role note below)
 //   ok          #74d8a4           -> kit says #3F7D57
 //   danger      #ff8a7a           -> kit says #A32820
 //   body font   RedHatText        -> kit says Archivo
@@ -113,8 +115,28 @@
   --sns-font-label: "Archivo Narrow", sans-serif;
   --sns-font-mono: "JetBrains Mono", ui-monospace, sfmono-regular, monospace;
 
-  /* AryaOS is the Signal Orange property. One accent per surface, ~5% of it. */
-  --sns-accent: #e4610f;
+  /* AryaOS is the Signal Orange property. TWO roles, kept apart.
+     --sns-brand   Signal Orange: fills, rules and the mark. Never a label.
+     --sns-accent  interactive text and links.
+
+     Measured on this surface (the console panel, #12211A):
+
+       Signal Orange   4.78:1 as text   min deltaE 51 from the status set
+       Okabe-Ito blue  7.23:1 as text   min deltaE 46
+
+     So unlike the portal -- where orange sat deltaE 5.3 from the danger
+     colour and genuinely read as a fault -- there is NO status collision
+     here, because the console's status colours are lightened pastels
+     (#7EA589 / #BA9C4F / #CA8C84) rather than saturated vermillion.
+
+     The split is made anyway, on legibility: 4.78:1 is a floor-scraping
+     value for body-sized text next to 7.23:1, and an operator reading a
+     console for a shift should not have to work at it. Keeping the two
+     roles distinct across every surface also means one rule to remember
+     rather than a per-surface exception. */
+  --sns-brand: #e4610f;
+  --sns-brand-ink: var(--sns-console);
+  --sns-accent: #56b4e9;
 
   /* Deviation 2: status colours lightened for the console, derived from the
      kit hue rather than hardcoded. */
@@ -130,9 +152,14 @@
   --aos-muted: color-mix(in srgb, var(--sns-paper) 62%, var(--sns-console));
   --aos-border: color-mix(in srgb, var(--sns-paper) 22%, var(--sns-console));
   --aos-border-strong: color-mix(in srgb, var(--sns-paper) 38%, var(--sns-console));
+  /* Existing plugin rules say var(--aos-accent) for links and active states,
+     so that alias points at the INTERACTIVE colour. Fills that want the brand
+     ask for --aos-brand explicitly. */
   --aos-accent: var(--sns-accent);
   --aos-accent-dark: color-mix(in srgb, var(--sns-accent) 72%, var(--sns-paper));
   --aos-accent-ink: var(--sns-console);
+  --aos-brand: var(--sns-brand);
+  --aos-brand-ink: var(--sns-brand-ink);
   --aos-ok: var(--sns-ok-console);
   --aos-danger: var(--sns-fault-console);
 }
