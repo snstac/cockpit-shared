@@ -1,0 +1,296 @@
+// AryaOS Cockpit theme — the single source for every cockpit-* plugin.
+//
+// Why this file exists
+// -------------------
+// Eleven plugins each carried their own 143–308 line stylesheet defining an
+// identical `--aos-*` palette (cockpit-dronecot and cockpit-lincot were
+// byte-for-byte identical). None of them referenced the AryaOS Product Suite
+// design tokens, so the console had drifted from the kit and from aryaos.org:
+//
+//   accent      #35a58f teal      -> Signal Orange #E4610F for FILLS,
+//                                    Okabe-Ito blue for interactive text
+//                                    (see the two-role note below)
+//   ok          #74d8a4           -> kit says #3F7D57
+//   danger      #ff8a7a           -> kit says #A32820
+//   body font   RedHatText        -> kit says Archivo
+//   mono        ui-monospace      -> kit says JetBrains Mono
+//   cards       8px radius + a 30px shadow -> kit says radius 0, no shadows
+//
+// What the plugins already had RIGHT and this file preserves: the dark console
+// theme, 48px (3rem) targets for gloved use, and a single 760px breakpoint.
+//
+// The `--aos-*` names are kept as ALIASES onto the kit tokens. That is
+// deliberate: every plugin rule already says `var(--aos-panel)`, so aliasing
+// makes those rules kit-correct without rewriting hundreds of declarations, and
+// lets a plugin migrate by deleting its palette block and importing this.
+//
+// Token values mirror aryaos/docs/brand/tokens/suite-tokens.css. If a value here
+// is not traceable to that file (or to the documented deviations below), it is a
+// bug.
+//
+// Documented deviations from the kit, both intentional:
+//   1. --sns-target is 48px here, not the kit's 44px. AryaOS operator surfaces
+//      are driven with gloves on.
+//   2. Status colours are LIGHTENED for the console. The kit specifies them
+//      against Paper (#F2EFE7). Measured WCAG contrast of the kit values as text
+//      on the console (#0B1512):
+//
+//        ok    #3F7D57  3.79:1  passes UI 3:1, FAILS body text 4.5:1
+//        warn  #A8811C  5.15:1  passes -- would have been fine as-is
+//        fault #A32820  2.55:1  FAILS outright, unreadable
+//
+//      So the hue stays anchored to the kit token and the console variant is
+//      derived with color-mix, rather than introducing a second hardcoded
+//      palette that can drift. Percentages were chosen so all three land in one
+//      narrow band, because a triad lightened unevenly reads as mismatched:
+//
+//        ok    65% kit -> #7EA589  6.75:1
+//        warn  75% kit -> #BA9C4F  7.04:1
+//        fault 50% kit -> #CA8C84  6.72:1
+//
+//      fault needs the most lightening simply because #A32820 is the darkest of
+//      the three. warn is lightened despite already passing, for consistency.
+//
+// Copyright Sensors & Signals LLC https://www.snstac.com/
+// SPDX-License-Identifier: Apache-2.0
+
+// The fonts must be SERVED, not merely named. Cockpit renders in the operator's
+// browser, not on the Pi, so installing Archivo on the box would do nothing:
+// measured on aryaos-4f11, `fc-list` finds 0 Archivo and 0 JetBrains faces, and
+// a bare `font-family: Archivo` would have silently fallen back to sans-serif --
+// a rule that looks applied and is not.
+//
+// Bundling webfonts per plugin is already the established pattern here:
+// PatternFly ships ~22 woff2 files into every plugin's assets/ and @font-face-s
+// them with relative URLs (264 woff2 across the fleet). Our three add ~85 KB.
+//
+// Fonts are OFL-1.1; src/fonts/ carries the licence and notices with them.
+@font-face {
+  font-family: Archivo;
+  src: url("./fonts/archivo-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Archivo Narrow";
+  src: url("./fonts/archivo-narrow-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./fonts/jetbrains-mono-latin.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Kit tokens (suite-tokens.css) ---------------------------------- */
+  --sns-ink: #12211a;
+  --sns-field: #1d4634;
+  --sns-console: #0b1512;
+  --sns-paper: #f2efe7;
+  --sns-paper-2: #eae6dc;
+  --sns-slate: #6b7169;
+  --sns-hairline: #cfcbc0;
+
+  --sns-ok: #3f7d57;
+  --sns-warn: #a8811c;
+  --sns-fault: #a32820;
+
+  --sns-unit: 8px;
+  --sns-gutter: 24px;
+  --sns-rule: 2px;
+  --sns-radius: 0;
+
+  /* Deviation 1: 48px, not the kit's 44px — gloved operation. */
+  --sns-target: 48px;
+
+  --sns-font-display: "Archivo", sans-serif;
+  --sns-font-body: "Archivo", sans-serif;
+  --sns-font-label: "Archivo Narrow", sans-serif;
+  --sns-font-mono: "JetBrains Mono", ui-monospace, sfmono-regular, monospace;
+
+  /* AryaOS is the Signal Orange property. TWO roles, kept apart.
+     --sns-brand   Signal Orange: fills, rules and the mark. Never a label.
+     --sns-accent  interactive text and links.
+
+     Measured on this surface (the console panel, #12211A):
+
+       Signal Orange   4.78:1 as text   min deltaE 51 from the status set
+       Okabe-Ito blue  7.23:1 as text   min deltaE 46
+
+     So unlike the portal -- where orange sat deltaE 5.3 from the danger
+     colour and genuinely read as a fault -- there is NO status collision
+     here, because the console's status colours are lightened pastels
+     (#7EA589 / #BA9C4F / #CA8C84) rather than saturated vermillion.
+
+     The split is made anyway, on legibility: 4.78:1 is a floor-scraping
+     value for body-sized text next to 7.23:1, and an operator reading a
+     console for a shift should not have to work at it. Keeping the two
+     roles distinct across every surface also means one rule to remember
+     rather than a per-surface exception. */
+  --sns-brand: #e4610f;
+  --sns-brand-ink: var(--sns-console);
+  --sns-accent: #56b4e9;
+
+  /* Deviation 2: status colours lightened for the console, derived from the
+     kit hue rather than hardcoded. */
+  --sns-ok-console: color-mix(in srgb, var(--sns-ok) 65%, var(--sns-paper));
+  --sns-warn-console: color-mix(in srgb, var(--sns-warn) 75%, var(--sns-paper));
+  --sns-fault-console: color-mix(in srgb, var(--sns-fault) 50%, var(--sns-paper));
+
+  /* ---- --aos-* aliases: what the plugins already reference ------------- */
+  --aos-bg: var(--sns-console);
+  --aos-panel: var(--sns-ink);
+  --aos-panel-2: var(--sns-field);
+  --aos-ink: var(--sns-paper);
+  --aos-muted: color-mix(in srgb, var(--sns-paper) 62%, var(--sns-console));
+  --aos-border: color-mix(in srgb, var(--sns-paper) 22%, var(--sns-console));
+  --aos-border-strong: color-mix(in srgb, var(--sns-paper) 38%, var(--sns-console));
+  /* Existing plugin rules say var(--aos-accent) for links and active states,
+     so that alias points at the INTERACTIVE colour. Fills that want the brand
+     ask for --aos-brand explicitly. */
+  --aos-accent: var(--sns-accent);
+  --aos-accent-dark: color-mix(in srgb, var(--sns-accent) 72%, var(--sns-paper));
+  --aos-accent-ink: var(--sns-console);
+  --aos-brand: var(--sns-brand);
+  --aos-brand-ink: var(--sns-brand-ink);
+  --aos-ok: var(--sns-ok-console);
+  --aos-danger: var(--sns-fault-console);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  block-size: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--aos-bg);
+  color: var(--aos-ink);
+  font-family: var(--sns-font-body);
+}
+
+/* Mono means machine: commands, ports, frequencies, callsigns, hex, morse.
+   Not decoration — if it is not machine output it should not be mono. */
+code,
+kbd,
+pre,
+samp,
+.aos-mono {
+  font-family: var(--sns-font-mono);
+}
+
+/* Labels take the narrow face. */
+label,
+legend,
+th,
+.aos-label {
+  font-family: var(--sns-font-label);
+}
+
+/* ---- Non-negotiables ------------------------------------------------- */
+
+/* Radius 0, everywhere, no exceptions. Scoped to our own surfaces plus the
+   PatternFly components we actually render — a blanket `*` rule also flattens
+   switches, spinners and progress bars, where the radius carries meaning. */
+.aos-card,
+.aos-panel,
+.aos-btn,
+.aos-input,
+button,
+input,
+select,
+textarea,
+fieldset,
+pre,
+table,
+.pf-v6-c-card,
+.pf-v6-c-button,
+.pf-v6-c-form-control,
+.pf-v6-c-menu,
+.pf-v6-c-modal-box,
+.pf-v6-c-alert,
+.pf-v6-c-select__toggle,
+.pf-v6-c-text-input-group {
+  border-radius: var(--sns-radius);
+}
+
+/* No shadows. A 2px rule does the separating. Same scoping rationale. */
+.aos-card,
+.aos-panel,
+.pf-v6-c-card,
+.pf-v6-c-button,
+.pf-v6-c-form-control,
+.pf-v6-c-menu,
+.pf-v6-c-modal-box,
+.pf-v6-c-alert,
+.pf-v6-c-select__toggle,
+.pf-v6-c-dropdown__menu {
+  box-shadow: none;
+}
+
+.aos-card,
+.aos-panel,
+.pf-v6-c-card {
+  background: var(--aos-panel);
+  border: var(--sns-rule) solid var(--aos-border);
+  padding: var(--sns-gutter);
+}
+
+/* 48px targets for gloved use. */
+button,
+input,
+select,
+textarea,
+.aos-btn,
+.aos-input,
+.pf-v6-c-button,
+.pf-v6-c-form-control {
+  min-height: var(--sns-target);
+  font-family: var(--sns-font-body);
+}
+
+/* Status colours are fixed and never borrow the accent. */
+.aos-ok,
+.aos-state-active {
+  color: var(--sns-ok-console);
+}
+
+.aos-warn {
+  color: var(--sns-warn-console);
+}
+
+.aos-fault,
+.aos-state-failed {
+  color: var(--sns-fault-console);
+}
+
+/* A status dot is the one round thing we allow: it is a dot, and a 2px square
+   reads as a defect rather than a state. Called out so it is an explicit
+   exception, not an oversight. */
+.aos-dot {
+  border-radius: 50%;
+  inline-size: var(--sns-unit);
+  block-size: var(--sns-unit);
+  display: inline-block;
+}
+
+/* Single breakpoint for the whole fleet. */
+@media (width <= 760px) {
+  .aos-card,
+  .aos-panel,
+  .pf-v6-c-card {
+    padding: var(--sns-unit);
+  }
+}
