@@ -95,7 +95,10 @@ function ActivityMetrics({
 }: {
     status: GatewayStatus;
     noun: string;
-    counterLabels?: Record<string, string>;
+    // Explicitly `| undefined` rather than optional: the repo builds with
+    // exactOptionalPropertyTypes, under which `?:` refuses an explicitly
+    // passed undefined.
+    counterLabels: Record<string, string> | undefined;
 }) {
     const rate = contactRate(status);
     const direction = trendDirection(status);
