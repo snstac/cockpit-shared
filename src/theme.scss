@@ -294,3 +294,108 @@ textarea,
     padding: var(--sns-unit);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Gateway activity card (GatewayActivityCard)
+
+   The "is it hearing anything" panel every pytak gateway plugin renders.
+   ------------------------------------------------------------------------- */
+
+.aos-activity-state,
+.aos-activity-skew {
+  margin-block-end: var(--sns-unit);
+}
+
+.aos-activity-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--sns-unit) * 2);
+  margin-block: var(--sns-unit) calc(var(--sns-unit) * 1.5);
+}
+
+.aos-metric {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 4.5rem;
+}
+
+.aos-metric-value {
+  /* Figures are read at a glance and compared between boxes, so they are
+     tabular: proportional digits make 1,181 and 1,881 different widths and
+     the eye stops being able to scan a column. */
+  font-family: var(--sns-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  color: var(--aos-ink);
+}
+
+.aos-metric-label {
+  font-family: var(--sns-font-label);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--aos-muted);
+}
+
+.aos-activity-spark {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+}
+
+.aos-activity-empty {
+  font-family: var(--sns-font-label);
+  color: var(--aos-muted);
+  margin: 0;
+}
+
+.aos-activity-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-family: var(--sns-font-mono);
+  font-size: 0.82rem;
+
+  th {
+    text-align: start;
+    font-family: var(--sns-font-label);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aos-muted);
+    border-block-end: var(--sns-rule) solid var(--aos-border);
+    padding-block: calc(var(--sns-unit) / 2);
+    padding-inline-end: var(--sns-unit);
+  }
+
+  td {
+    padding-block: calc(var(--sns-unit) / 2);
+    padding-inline-end: var(--sns-unit);
+    border-block-end: 1px solid var(--aos-border);
+    color: var(--aos-ink);
+    white-space: nowrap;
+  }
+
+  tr:last-child td {
+    border-block-end: 0;
+  }
+}
+
+.aos-activity-time {
+  color: var(--aos-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The feed is the first thing to lose room on a handheld; let it scroll
+   sideways rather than crushing every column to unreadable width. */
+@media (width <= 760px) {
+  .aos-activity-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .aos-activity-spark {
+    margin-inline-start: 0;
+  }
+}
