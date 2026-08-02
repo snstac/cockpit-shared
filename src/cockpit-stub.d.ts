@@ -21,6 +21,7 @@ declare module 'cockpit' {
     }
 
     interface DBusClient {
+        close(problem?: string): void;
         call(
             path: string,
             iface: string,

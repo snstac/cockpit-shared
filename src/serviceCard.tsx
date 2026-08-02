@@ -8,6 +8,8 @@ import { Card, CardBody, CardTitle } from '@patternfly/react-core/dist/esm/compo
 import { capitalize } from '@patternfly/react-core';
 import cockpit from 'cockpit';
 
+import { callAndClose } from './dbus';
+
 const _ = cockpit.gettext;
 
 function unitPath(serviceName: string): string {
@@ -23,7 +25,13 @@ async function getUnitProperty(
     iface: string,
     prop: string
 ): Promise<unknown> {
-    const result = await cockpit.dbus('org.freedesktop.systemd1', { superuser: 'try' }).call(
+    const client = cockpit.dbus('org.freedesktop.systemd1', { superuser: 'try' });
+    // cockpit.dbus() creates a channel and installs system-bus match rules. The
+    // service card polls four properties every four seconds; leaving those
+    // short-lived clients open exhausts D-Bus's 2,048-rule limit in minutes and
+    // grows cockpit-bridge without bound.
+    const result = await callAndClose(
+        client,
         unitPath(serviceName),
         'org.freedesktop.DBus.Properties',
         'Get',
