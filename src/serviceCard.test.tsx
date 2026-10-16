@@ -319,3 +319,22 @@ describe('ServiceManagementCard controls', () => {
         });
     });
 });
+
+describe('ServiceManagementCard D-Bus object path', () => {
+    // systemd's bus_label_escape(): every byte outside [A-Za-z0-9] (and a
+    // leading digit) becomes '_' plus two lowercase hex digits.
+    it.each([
+        ['aiscot', 'aiscot_2eservice'],
+        ['dump1090-fa', 'dump1090_2dfa_2eservice'],
+        ['getty@tty1', 'getty_40tty1_2eservice'],
+        ['my_svc', 'my_5fsvc_2eservice'],
+        ['a_be', 'a_5fbe_2eservice'],
+        ['1090', '_31090_2eservice'],
+    ])('addresses %s as .../unit/%s', async (serviceName, label) => {
+        serveProps(RUNNING);
+        renderCard(serviceName);
+        await screen.findByText('Active');
+        const paths = new Set(call.mock.calls.map(c => c[0]));
+        expect([...paths]).toEqual([`/org/freedesktop/systemd1/unit/${label}`]);
+    });
+});
