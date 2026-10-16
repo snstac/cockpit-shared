@@ -103,7 +103,13 @@ function ActivityMetrics({
     const rate = contactRate(status);
     const direction = trendDirection(status);
     const buckets = status.trend?.length ?? 0;
-    const minutes = Math.round((status.trend_interval_s || 60) / 60);
+    const interval = status.trend_interval_s || 60;
+    // Whole minutes keep the original wording; anything else (a 20s or 90s
+    // bucket) would round to a false "per 0 minute" / "per 2 minute".
+    const bucket =
+        interval % 60 === 0
+            ? `${interval / 60} minute`
+            : `${interval} second${interval === 1 ? '' : 's'}`;
 
     return (
         <div className="aos-activity-metrics">
@@ -123,7 +129,7 @@ function ActivityMetrics({
             <div className="aos-activity-spark">
                 <Sparkline
                     data={status.trend ?? []}
-                    label={`${noun}s per ${minutes} minute over the last ${buckets}`}
+                    label={`${noun}s per ${bucket} over the last ${buckets}`}
                 />
             </div>
         </div>
