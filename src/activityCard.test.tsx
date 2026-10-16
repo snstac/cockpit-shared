@@ -228,6 +228,13 @@ describe('GatewayActivityCard contacts', () => {
         expect(bodyRows(container).map(r => r.cells[1].textContent)).toEqual(['N11', 'N10']);
     });
 
+    it.each([0, -1])('shows no rows for limit=%s', (limit) => {
+        setState({ status: makeStatus({ recent: contacts }) });
+        const { container } = renderCard({ limit });
+        expect(bodyRows(container)).toHaveLength(0);
+        expect(screen.getByText('No contacts recorded yet.')).toBeTruthy();
+    });
+
     it('renders column headers', () => {
         setState({ status: makeStatus({ recent: contacts.slice(0, 1) }) });
         const { container } = renderCard({ columns: [...COLUMNS, { key: 'label', label: 'Label' }] });
