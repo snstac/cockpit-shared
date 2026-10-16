@@ -192,3 +192,41 @@ describe('shellQuoteValue cases', () => {
         expect(shellQuoteValue(value, def)).toBe(expected);
     });
 });
+
+describe('quote round trip', () => {
+    // systemd EnvironmentFile double-quote rules unescape \" \\ \$ and \`;
+    // parse(serialize(v)) must be the identity or every save adds backslashes.
+    it.each([
+        'plain',
+        '',
+        'a b',
+        'a$b',
+        '$HOME',
+        'a`b',
+        'a\\$b',
+        'a\\`b',
+        'a\\"b',
+        'a"b',
+        'C:\\path\\',
+        '\\\\',
+        '\\',
+        '"',
+        "it's",
+        'tab\there',
+        '\\$\\`\\"\\\\',
+    ])('round-trips %j', (value) => {
+        const keys = new Set(['CALLSIGN']);
+        const params = { CALLSIGN: CONF_PARAMS.CALLSIGN };
+        const { lines } = parseEnvDefault('CALLSIGN=x', keys);
+        const once = serializeEnvDefault(lines, { CALLSIGN: value }, params);
+        const parsed = parseEnvDefault(once, keys);
+        expect(parsed.values.CALLSIGN).toBe(value);
+        const twice = serializeEnvDefault(parsed.lines, parsed.values, params);
+        expect(twice).toBe(once);
+    });
+
+    it('decodes systemd escapes inside double quotes in one pass', () => {
+        const { values } = parseEnvDefault('CALLSIGN="\\$x \\`y\\` \\\\$z"', KNOWN);
+        expect(values.CALLSIGN).toBe('$x `y` \\$z');
+    });
+});
