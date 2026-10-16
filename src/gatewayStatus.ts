@@ -133,19 +133,27 @@ export function useGatewayStatus(
                 if (content === null || tag === '-') {
                     setMissing(true);
                     setStatus(null);
+                    // Nothing to be wrong about any more.
+                    setError(null);
+                    setClockSkew(false);
                     return;
                 }
 
-                let parsed: GatewayStatus;
+                let doc: unknown;
                 try {
-                    parsed = JSON.parse(content);
+                    doc = JSON.parse(content);
                 } catch {
+                    doc = undefined;
+                }
+                if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
                     // Writes are atomic, so this should not happen. If it
-                    // does, keep the last good document rather than blanking
-                    // the panel, and say so.
+                    // does (bad JSON, or JSON that is not a document), keep
+                    // the last good document rather than blanking the
+                    // panel, and say so.
                     setError('Status file could not be parsed');
                     return;
                 }
+                const parsed = doc as GatewayStatus;
 
                 setMissing(false);
                 setError(null);
