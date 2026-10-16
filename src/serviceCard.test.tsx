@@ -332,6 +332,46 @@ describe('ServiceManagementCard controls', () => {
     });
 });
 
+/**
+ * What cockpit.spawn() really rejects with: a cockpit.ProcessError, which is
+ * not an Error subclass. With `err: 'message'` its message is systemctl's
+ * stderr, so the "exited with code N" wording never appears.
+ */
+function processError(message: string, exitStatus: number | null) {
+    return { problem: null, exit_status: exitStatus, exit_signal: null, message, toString() { return message } };
+}
+
+const NOT_FOUND = 'Failed: Start: Unit aiscot.service was not found. Install the package that provides this unit (or create the unit file), then refresh this page.';
+
+describe('ServiceManagementCard controls with real cockpit ProcessErrors', () => {
+    it.each([
+        ['start on a missing unit (exit 5)', 'Failed to start aiscot.service: Unit aiscot.service not found.', 5],
+        ['a missing unit reported with exit 4', 'Unit aiscot.service could not be found.', 4],
+        ['enable on a missing unit file', 'Failed to enable unit: Unit file aiscot.service does not exist.', 1],
+    ])('explains %s', async (_case, message, exitStatus) => {
+        serveProps(RUNNING);
+        spawn.mockRejectedValue(processError(message, exitStatus));
+        const { onToast } = renderCard();
+        await screen.findByText('Active');
+        fireEvent.click(button('Start'));
+        await waitFor(() => expect(onToast).toHaveBeenCalledOnce());
+        expect(onToast).toHaveBeenCalledWith({ variant: 'danger', title: NOT_FOUND });
+    });
+
+    it('passes other systemctl failures through unchanged', async () => {
+        serveProps(RUNNING);
+        const message = 'Job for aiscot.service failed because the control process exited with error code.';
+        spawn.mockRejectedValue(processError(message, 1));
+        const { onToast } = renderCard();
+        await screen.findByText('Active');
+        fireEvent.click(button('Start'));
+        await waitFor(() => expect(onToast).toHaveBeenCalledWith({
+            variant: 'danger',
+            title: `Failed: Start: ${message}`,
+        }));
+    });
+});
+
 describe('ServiceManagementCard D-Bus object path', () => {
     // systemd's bus_label_escape(): every byte outside [A-Za-z0-9] (and a
     // leading digit) becomes '_' plus two lowercase hex digits.
@@ -342,6 +382,7 @@ describe('ServiceManagementCard D-Bus object path', () => {
         ['my_svc', 'my_5fsvc_2eservice'],
         ['a_be', 'a_5fbe_2eservice'],
         ['1090', '_31090_2eservice'],
+        ['café', 'caf_c3_a9_2eservice'],
     ])('addresses %s as .../unit/%s', async (serviceName, label) => {
         serveProps(RUNNING);
         renderCard(serviceName);
