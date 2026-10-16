@@ -166,7 +166,7 @@ describe('useGatewayStatus', () => {
         expect(result.current.freshness).toBe('quiet');
     });
 
-    it('drops non-numeric trend buckets and non-object contacts', () => {
+    it('zeroes non-numeric trend buckets (keeping positions) and drops non-object contacts', () => {
         const { result } = renderHook(() => useGatewayStatus('testcot'));
         emit(JSON.stringify({ ...makeDoc(), trend: [1, 'x', null, 2], recent: [{ t: 1 }, 'junk', null] }));
         expect(result.current.status?.trend).toEqual([1, 0, 0, 2]);

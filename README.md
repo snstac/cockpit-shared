@@ -65,7 +65,7 @@ npm install        # dev deps (+ peer deps: react, @patternfly/react-core)
 npm test           # vitest
 npm run test:coverage  # vitest + v8 coverage, fails below 90%
 npm run typecheck  # tsc --noEmit
-npm run eslint     # eslint src/
+npm run eslint     # eslint src/ test/
 ```
 
 ## License

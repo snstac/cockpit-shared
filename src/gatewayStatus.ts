@@ -77,6 +77,27 @@ const DEFAULT_STALE_AFTER_S = 30;
 /** Skew beyond this between the two clocks makes wall_t useless to us. */
 const CLOCK_SKEW_TOLERANCE_S = 120;
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Coerce the collections every consumer iterates into the shapes the types
+ * promise, so one bad field cannot throw during render and blank the page.
+ */
+function normaliseStatus(doc: GatewayStatus): GatewayStatus {
+    const trend: unknown = doc.trend;
+    const recent: unknown = doc.recent;
+    return {
+        ...doc,
+        counters: isPlainObject(doc.counters) ? doc.counters : {},
+        trend: Array.isArray(trend)
+            ? trend.map(v => (typeof v === 'number' && isFinite(v) ? v : 0))
+            : [],
+        recent: Array.isArray(recent) ? recent.filter(isPlainObject) as GatewayContact[] : [],
+    };
+}
+
 export function statusPath(appName: string): string {
     return `/run/${appName}/status.json`;
 }
@@ -153,7 +174,7 @@ export function useGatewayStatus(
                     setError('Status file could not be parsed');
                     return;
                 }
-                const parsed = doc as GatewayStatus;
+                const parsed = normaliseStatus(doc as GatewayStatus);
 
                 setMissing(false);
                 setError(null);
