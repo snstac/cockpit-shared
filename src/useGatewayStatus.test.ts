@@ -155,6 +155,24 @@ describe('useGatewayStatus', () => {
         }
     );
 
+    it('normalises malformed collections so render-time helpers cannot throw', () => {
+        const { result } = renderHook(() => useGatewayStatus('testcot'));
+        emit(JSON.stringify({ ...makeDoc(), trend: 'abc', recent: {}, counters: 5 }));
+        const status = result.current.status;
+        expect(status?.trend).toEqual([]);
+        expect(status?.recent).toEqual([]);
+        expect(status?.counters).toEqual({});
+        // Nothing heard is the honest reading of a document with no trend.
+        expect(result.current.freshness).toBe('quiet');
+    });
+
+    it('drops non-numeric trend buckets and non-object contacts', () => {
+        const { result } = renderHook(() => useGatewayStatus('testcot'));
+        emit(JSON.stringify({ ...makeDoc(), trend: [1, 'x', null, 2], recent: [{ t: 1 }, 'junk', null] }));
+        expect(result.current.status?.trend).toEqual([1, 0, 0, 2]);
+        expect(result.current.status?.recent).toEqual([{ t: 1 }]);
+    });
+
     it('treats a first read of non-object JSON as missing with an error', () => {
         const { result } = renderHook(() => useGatewayStatus('testcot'));
         emit('null');
