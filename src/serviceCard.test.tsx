@@ -318,6 +318,18 @@ describe('ServiceManagementCard controls', () => {
             title: 'Failed: Start: Unit aiscot.service was not found. Install the package that provides this unit (or create the unit file), then refresh this page.',
         });
     });
+
+    it.each(['exit status 42', 'Process exited with code 43'])('does not mistake %j for a missing unit', async (message) => {
+        serveProps(RUNNING);
+        spawn.mockRejectedValue(new Error(message));
+        const { onToast } = renderCard();
+        await screen.findByText('Active');
+        fireEvent.click(button('Start'));
+        await waitFor(() => expect(onToast).toHaveBeenCalledWith({
+            variant: 'danger',
+            title: `Failed: Start: ${message}`,
+        }));
+    });
 });
 
 describe('ServiceManagementCard D-Bus object path', () => {
