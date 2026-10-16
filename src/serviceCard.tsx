@@ -12,12 +12,26 @@ import { callAndClose } from './dbus';
 
 const _ = cockpit.gettext;
 
+/**
+ * Escape a unit name into a D-Bus object path label the way systemd's
+ * bus_label_escape() does: every byte outside [A-Za-z0-9], and a leading
+ * digit, becomes '_' followed by two lowercase hex digits.
+ */
+function busLabelEscape(name: string): string {
+    let out = '';
+    const bytes = new TextEncoder().encode(name);
+    bytes.forEach((byte, index) => {
+        const ch = String.fromCharCode(byte);
+        if (/[A-Za-z]/.test(ch) || (index > 0 && /[0-9]/.test(ch)))
+            out += ch;
+        else
+            out += '_' + byte.toString(16).padStart(2, '0');
+    });
+    return out;
+}
+
 function unitPath(serviceName: string): string {
-    return (
-        '/org/freedesktop/systemd1/unit/' +
-        serviceName.replace(/-/g, '_') +
-        '_2eservice'
-    );
+    return '/org/freedesktop/systemd1/unit/' + busLabelEscape(`${serviceName}.service`);
 }
 
 async function getUnitProperty(
