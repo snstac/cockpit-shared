@@ -18,8 +18,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "eslint": "eslint src/",
-    "eslint:fix": "eslint --fix src/",
+    "eslint": "eslint src/ test/",
+    "eslint:fix": "eslint --fix src/ test/",
     "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage"
   },
