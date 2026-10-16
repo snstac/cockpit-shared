@@ -15,6 +15,13 @@ export default defineConfig({
         // docblock; everything else runs in plain node.
         environment: 'node',
         include: ['src/**/*.test.{ts,tsx}'],
+        // PatternFly's ESM build imports its .css files; let Vite process
+        // (and stub) them instead of handing them to Node.
+        server: {
+            deps: {
+                inline: [/@patternfly\//],
+            },
+        },
         coverage: {
             provider: 'v8',
             include: ['src/**/*.{ts,tsx}'],

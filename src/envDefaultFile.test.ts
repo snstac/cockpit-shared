@@ -90,3 +90,105 @@ describe('shellQuoteValue', () => {
         expect(q.endsWith('"')).toBe(true);
     });
 });
+
+describe('parseEnvDefault value forms', () => {
+    it('strips single quotes verbatim, without unescaping', () => {
+        const { values } = parseEnvDefault("CALLSIGN='a \\\"b\\\" $c'\n", KNOWN);
+        expect(values.CALLSIGN).toBe('a \\"b\\" $c');
+    });
+
+    it('unescapes double-quoted \\" and \\\\', () => {
+        const { values } = parseEnvDefault('CALLSIGN="say \\"hi\\" c:\\\\x"\n', KNOWN);
+        expect(values.CALLSIGN).toBe('say "hi" c:\\x');
+    });
+
+    it('leaves a lone quote character alone', () => {
+        const { values } = parseEnvDefault('CALLSIGN="\n', KNOWN);
+        expect(values.CALLSIGN).toBe('"');
+    });
+
+    it('keeps an unquoted value as-is', () => {
+        const { values } = parseEnvDefault('DEBUG=1\n', KNOWN);
+        expect(values.DEBUG).toBe('1');
+    });
+
+    it('records export on known keys, keeps export on unknown lines verbatim', () => {
+        const src = 'export   DEBUG=1\nexport OTHER=2\nCOT_URL=x\n';
+        const { lines, values } = parseEnvDefault(src, KNOWN);
+        expect(values.DEBUG).toBe('1');
+        expect(lines[0]).toEqual({ kind: 'known', key: 'DEBUG', exportVar: true });
+        expect(lines[1]).toEqual({ kind: 'unknown', text: 'export OTHER=2' });
+        expect(lines[2]).toEqual({ kind: 'known', key: 'COT_URL', exportVar: false });
+    });
+
+    it('keeps invalid lines as raw text', () => {
+        const src = 'not an assignment\n-BAD=1\n=nokey\n   # indented comment';
+        const { lines, values } = parseEnvDefault(src, KNOWN);
+        expect(values).toEqual({});
+        expect(lines).toEqual([
+            { kind: 'raw', text: 'not an assignment' },
+            { kind: 'raw', text: '-BAD=1' },
+            { kind: 'raw', text: '=nokey' },
+            { kind: 'raw', text: '   # indented comment' },
+        ]);
+    });
+});
+
+describe('serializeEnvDefault details', () => {
+    it('re-emits the export prefix for known keys', () => {
+        const { lines, values } = parseEnvDefault('export DEBUG=1', KNOWN);
+        const out = serializeEnvDefault(lines, { ...values, COT_URL: 'x' }, CONF_PARAMS);
+        expect(out.split('\n')[0]).toBe('export DEBUG=1');
+    });
+
+    it('writes an empty string for a known key missing from the form', () => {
+        const { lines } = parseEnvDefault('DEBUG=1', KNOWN);
+        const out = serializeEnvDefault(lines, {}, { DEBUG: CONF_PARAMS.DEBUG });
+        expect(out).toBe('DEBUG=""');
+    });
+
+    it('appends only required or non-default values', () => {
+        const { lines } = parseEnvDefault('# head', KNOWN);
+        const out = serializeEnvDefault(
+            lines,
+            { COT_URL: 'udp+wo://239.2.3.1:6969', DEBUG: '', CALLSIGN: '' },
+            CONF_PARAMS
+        );
+        expect(out).toBe('# head\n\n# Added by Cockpit\nCOT_URL=udp+wo://239.2.3.1:6969');
+    });
+
+    it('appends a key with no definition only when non-empty', () => {
+        const params = { X: undefined as unknown as EnvVarDefinition, Y: undefined as unknown as EnvVarDefinition };
+        const out = serializeEnvDefault([], { X: 'v', Y: '' }, params);
+        expect(out).toBe('# Added by Cockpit\nX=v');
+    });
+
+    it('treats a missing defaultValue as empty', () => {
+        const def = { type: 'string', description: '' } as unknown as EnvVarDefinition;
+        expect(serializeEnvDefault([], { A: '' }, { A: def })).toBe('');
+        expect(serializeEnvDefault([], { A: 'z' }, { A: def })).toBe('# Added by Cockpit\nA=z');
+    });
+
+    it('does not add a blank separator after an existing blank line', () => {
+        const { lines } = parseEnvDefault('# head\n', KNOWN);
+        const out = serializeEnvDefault(lines, { COT_URL: 'u' }, { COT_URL: CONF_PARAMS.COT_URL });
+        expect(out).toBe('# head\n\n# Added by Cockpit\nCOT_URL=u');
+    });
+});
+
+describe('shellQuoteValue cases', () => {
+    it.each([
+        ['plain', undefined, 'plain'],
+        ['udp+wo://1.2.3.4:6969', undefined, 'udp+wo://1.2.3.4:6969'],
+        ['', undefined, '""'],
+        ['a"b', undefined, '"a\\"b"'],
+        ['a\\b', undefined, '"a\\\\b"'],
+        ['$HOME', undefined, '"\\$HOME"'],
+        ['a`b', undefined, '"a\\`b"'],
+        ["it's", undefined, '"it\'s"'],
+        ['semi;colon', undefined, '"semi;colon"'],
+        ['forced', CONF_PARAMS.CALLSIGN, '"forced"'],
+    ])('quotes %j', (value, def, expected) => {
+        expect(shellQuoteValue(value, def)).toBe(expected);
+    });
+});

@@ -48,6 +48,7 @@ describe('recentContactCount', () => {
 
     it('is zero when the trend is absent', () => {
         expect(recentContactCount(makeStatus({ trend: [] }))).toBe(0);
+        expect(recentContactCount(makeStatus({ trend: undefined as unknown as number[] }))).toBe(0);
     });
 });
 
@@ -137,5 +138,42 @@ describe('formatUptime', () => {
         [180000, '2d 2h'],
     ])('formats %s', (seconds, expected) => {
         expect(formatUptime(seconds as number | undefined)).toBe(expected);
+    });
+});
+
+describe('helper edge cases', () => {
+    it('formatAgo treats non-finite input as never', () => {
+        expect(formatAgo(Infinity)).toBe('never');
+        expect(formatAgo(NaN)).toBe('never');
+    });
+
+    it('formatUptime rejects zero and negative uptime', () => {
+        expect(formatUptime(0)).toBe('—');
+        expect(formatUptime(-5)).toBe('—');
+    });
+
+    it('contactRate is null for a nonsensical negative interval', () => {
+        expect(contactRate(makeStatus({ trend: [3, 3], trend_interval_s: -60 }))).toBeNull();
+    });
+
+    it('contactRate falls back to a 60s interval', () => {
+        const status = makeStatus({ trend: [3, 3], trend_interval_s: 0 });
+        expect(contactRate(status)).toBe(3);
+    });
+
+    it('trendDirection uses the whole trend when uptime is unknown', () => {
+        const status = makeStatus({ trend: [0, 0, 0, 0, 5, 5] });
+        delete (status as Partial<GatewayStatus>).uptime_s;
+        expect(trendDirection(status)).toBe('up');
+        expect(trendDirection(makeStatus({ trend: [0, 0, 0, 0, 5, 5], uptime_s: NaN }))).toBe('up');
+    });
+
+    it('trendDirection falls back to a 60s interval', () => {
+        const status = makeStatus({ trend: [0, 0, 0, 0, 5, 5], uptime_s: 120, trend_interval_s: 0 });
+        expect(trendDirection(status)).toBe('flat');
+    });
+
+    it('trendDirection is flat for a short trend', () => {
+        expect(trendDirection(makeStatus({ trend: [0, 0, 0, 9, 9] }))).toBe('flat');
     });
 });
