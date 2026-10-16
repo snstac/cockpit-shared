@@ -201,6 +201,16 @@ describe('GatewayActivityCard metrics', () => {
         expect(screen.getByRole('img').getAttribute('aria-label')).toBe('vessels per 5 minute over the last 3');
     });
 
+    it.each([
+        [20, 'contacts per 20 seconds over the last 6'],
+        [1, 'contacts per 1 second over the last 6'],
+        [90, 'contacts per 90 seconds over the last 6'],
+    ])('labels a %ss bucket in seconds', (trend_interval_s, label) => {
+        setState({ status: makeStatus({ trend_interval_s }) });
+        renderCard();
+        expect(screen.getByRole('img').getAttribute('aria-label')).toBe(label);
+    });
+
     it('defaults the sparkline bucket to one minute', () => {
         setState({ status: makeStatus({ trend_interval_s: 0 }) });
         renderCard();
