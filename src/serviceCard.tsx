@@ -54,6 +54,25 @@ async function getUnitProperty(
     return (result[0] as { v?: unknown } | undefined)?.v;
 }
 
+/**
+ * Whether a failed `systemctl <action>` means the unit does not exist.
+ *
+ * cockpit.spawn() rejects with a cockpit.ProcessError (not an Error) whose
+ * message, with `err: 'message'`, is systemctl's own stderr; the generic
+ * "exited with code N" text only appears when stderr was empty. systemctl
+ * exits 5 (start/stop/restart) or 4 (status-style queries) for an unknown
+ * unit, and enable/disable exit 1 with "Unit file ... does not exist".
+ */
+function isMissingUnitError(e: unknown, detail: string): boolean {
+    const exitStatus = (e as { exit_status?: unknown } | null)?.exit_status;
+    if (exitStatus === 4 || exitStatus === 5)
+        return true;
+    return (
+        /\b(?:code|exit status) 4\b/i.test(detail) ||
+        /\bunit (?:file )?\S+ (?:not found|could not be found|does not exist)/i.test(detail)
+    );
+}
+
 export type ToastMessage = { variant: 'success' | 'danger' | 'warning'; title: string };
 
 type ServiceManagementCardProps = {
@@ -113,7 +132,7 @@ export function ServiceManagementCard({ serviceName, onToast }: ServiceManagemen
             onToast({ variant: 'success', title: _('Completed: {0}').replace('{0}', label) });
         } catch (e: unknown) {
             let detail = e instanceof Error ? e.message : String(e);
-            if (/\b(?:code|exit status) 4\b/i.test(detail)) {
+            if (isMissingUnitError(e, detail)) {
                 detail = _(
                     'Unit {0}.service was not found. Install the package that provides this unit (or create the unit file), then refresh this page.'
                 ).replace('{0}', serviceName);
