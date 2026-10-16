@@ -51,16 +51,19 @@ this package — it resolves in the *consumer* from its `pkg/lib` directory:
 - at typecheck time via the consumer's tsconfig `"paths": { "*": ["./pkg/lib/*"] }`
   mapping (which resolves `cockpit` to `pkg/lib/cockpit.d.ts`).
 
-For this package's own standalone `tsc`/`eslint`/`vitest` runs, a minimal ambient stub
-(`src/cockpit-stub.d.ts`) declares just the API subset used here. The unit tests cover
-only the pure `envDefaultFile` helpers and do not require a real cockpit runtime; the
-React cards are exercised by the consuming plugins.
+For this package's own standalone `tsc`/`eslint` runs, a minimal ambient stub
+(`src/cockpit-stub.d.ts`) declares just the API subset used here. Under `vitest`,
+`cockpit` is aliased to a `vi.fn()`-based double in `test/cockpit-mock.ts`, so every
+module -- including the React cards, rendered with Testing Library in jsdom -- is unit
+tested without a real cockpit runtime. Coverage thresholds (90%) are enforced by
+`npm run test:coverage`.
 
 ## Development
 
 ```sh
 npm install        # dev deps (+ peer deps: react, @patternfly/react-core)
 npm test           # vitest
+npm run test:coverage  # vitest + v8 coverage, fails below 90%
 npm run typecheck  # tsc --noEmit
 npm run eslint     # eslint src/
 ```
