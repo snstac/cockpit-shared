@@ -232,7 +232,8 @@ export function GatewayActivityCard({
     const { status, freshness, secondsSinceChange, clockSkew, error } =
         useGatewayStatus(appName);
 
-    const recent = (status?.recent ?? []).slice(-limit).reverse();
+    // slice(-0) is the whole array, so a non-positive limit needs its own case.
+    const recent = limit > 0 ? (status?.recent ?? []).slice(-limit).reverse() : [];
 
     return (
         <Card>
