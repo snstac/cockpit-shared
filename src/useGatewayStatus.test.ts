@@ -143,6 +143,38 @@ describe('useGatewayStatus', () => {
         expect(result.current.status?.counters.rx).toBe(43);
     });
 
+    it.each(['null', '42', '[]', '"text"', 'true'])(
+        'treats valid JSON that is not an object (%s) as a parse failure',
+        (content) => {
+            const { result } = renderHook(() => useGatewayStatus('testcot'));
+            emitDoc({ counters: { rx: 42 } });
+            emit(content);
+            expect(result.current.error).toBe('Status file could not be parsed');
+            expect(result.current.status?.counters.rx).toBe(42);
+            expect(result.current.freshness).toBe('live');
+        }
+    );
+
+    it('treats a first read of non-object JSON as missing with an error', () => {
+        const { result } = renderHook(() => useGatewayStatus('testcot'));
+        emit('null');
+        expect(result.current.error).toBe('Status file could not be parsed');
+        expect(result.current.status).toBeNull();
+        expect(result.current.freshness).toBe('missing');
+    });
+
+    it('clears a stale parse error and clock skew when the file goes missing', () => {
+        const { result } = renderHook(() => useGatewayStatus('testcot'));
+        emitDoc({ wall_t: NOW_S - 600 });
+        emit('{broken');
+        expect(result.current.error).not.toBeNull();
+        expect(result.current.clockSkew).toBe(true);
+        emit(null, '-');
+        expect(result.current.freshness).toBe('missing');
+        expect(result.current.error).toBeNull();
+        expect(result.current.clockSkew).toBe(false);
+    });
+
     it('flags clock skew beyond tolerance in either direction', () => {
         const { result } = renderHook(() => useGatewayStatus('testcot'));
         emitDoc({ wall_t: NOW_S - 600 });
