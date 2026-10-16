@@ -96,6 +96,17 @@ describe('trendDirection', () => {
         expect(trendDirection(justStarted)).toBe('flat');
     });
 
+    it.each([30, 0, -100])('masks the whole trend when uptime is %ss (under one bucket)', (uptime_s) => {
+        // A gateway restarted 30s ago has no complete bucket of history; the
+        // older buckets are empty because it was not running.
+        const restarted = makeStatus({
+            trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            uptime_s,
+            trend_interval_s: 60,
+        });
+        expect(trendDirection(restarted)).toBe('flat');
+    });
+
     it('still reports a real gap-then-traffic as rising', () => {
         // Up for an hour: those zeros are genuine silence -- a disconnected
         // antenna that has just been reconnected -- and an operator wants to
