@@ -236,7 +236,10 @@ export function trendDirection(status: GatewayStatus | null): 'up' | 'down' | 'f
             ? Math.floor(uptime / interval)
             : trend.length;
 
-    const usable = trend.slice(-Math.max(Math.min(covered, trend.length), 0));
+    // slice(-0) is slice(0), the WHOLE array, so no coverage must be
+    // handled explicitly rather than by clamping to zero.
+    const keep = Math.min(covered, trend.length);
+    const usable = keep > 0 ? trend.slice(-keep) : [];
     if (usable.length < 6) return 'flat';
 
     const half = Math.floor(usable.length / 2);
