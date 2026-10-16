@@ -113,7 +113,7 @@ export function ServiceManagementCard({ serviceName, onToast }: ServiceManagemen
             onToast({ variant: 'success', title: _('Completed: {0}').replace('{0}', label) });
         } catch (e: unknown) {
             let detail = e instanceof Error ? e.message : String(e);
-            if (/(\bcode \b4\b|exit status 4|exited with code 4)/i.test(detail)) {
+            if (/\b(?:code|exit status) 4\b/i.test(detail)) {
                 detail = _(
                     'Unit {0}.service was not found. Install the package that provides this unit (or create the unit file), then refresh this page.'
                 ).replace('{0}', serviceName);
