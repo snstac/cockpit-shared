@@ -77,6 +77,27 @@ const DEFAULT_STALE_AFTER_S = 30;
 /** Skew beyond this between the two clocks makes wall_t useless to us. */
 const CLOCK_SKEW_TOLERANCE_S = 120;
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Coerce the collections every consumer iterates into the shapes the types
+ * promise, so one bad field cannot throw during render and blank the page.
+ */
+function normaliseStatus(doc: GatewayStatus): GatewayStatus {
+    const trend: unknown = doc.trend;
+    const recent: unknown = doc.recent;
+    return {
+        ...doc,
+        counters: isPlainObject(doc.counters) ? doc.counters : {},
+        trend: Array.isArray(trend)
+            ? trend.map(v => (typeof v === 'number' && isFinite(v) ? v : 0))
+            : [],
+        recent: Array.isArray(recent) ? recent.filter(isPlainObject) as GatewayContact[] : [],
+    };
+}
+
 export function statusPath(appName: string): string {
     return `/run/${appName}/status.json`;
 }
@@ -133,19 +154,27 @@ export function useGatewayStatus(
                 if (content === null || tag === '-') {
                     setMissing(true);
                     setStatus(null);
+                    // Nothing to be wrong about any more.
+                    setError(null);
+                    setClockSkew(false);
                     return;
                 }
 
-                let parsed: GatewayStatus;
+                let doc: unknown;
                 try {
-                    parsed = JSON.parse(content);
+                    doc = JSON.parse(content);
                 } catch {
+                    doc = undefined;
+                }
+                if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
                     // Writes are atomic, so this should not happen. If it
-                    // does, keep the last good document rather than blanking
-                    // the panel, and say so.
+                    // does (bad JSON, or JSON that is not a document), keep
+                    // the last good document rather than blanking the
+                    // panel, and say so.
                     setError('Status file could not be parsed');
                     return;
                 }
+                const parsed = normaliseStatus(doc as GatewayStatus);
 
                 setMissing(false);
                 setError(null);
@@ -236,7 +265,10 @@ export function trendDirection(status: GatewayStatus | null): 'up' | 'down' | 'f
             ? Math.floor(uptime / interval)
             : trend.length;
 
-    const usable = trend.slice(-Math.max(Math.min(covered, trend.length), 0));
+    // slice(-0) is slice(0), the WHOLE array, so no coverage must be
+    // handled explicitly rather than by clamping to zero.
+    const keep = Math.min(covered, trend.length);
+    const usable = keep > 0 ? trend.slice(-keep) : [];
     if (usable.length < 6) return 'flat';
 
     const half = Math.floor(usable.length / 2);
