@@ -12,12 +12,26 @@ import { callAndClose } from './dbus';
 
 const _ = cockpit.gettext;
 
+/**
+ * Escape a unit name into a D-Bus object path label the way systemd's
+ * bus_label_escape() does: every byte outside [A-Za-z0-9], and a leading
+ * digit, becomes '_' followed by two lowercase hex digits.
+ */
+function busLabelEscape(name: string): string {
+    let out = '';
+    const bytes = new TextEncoder().encode(name);
+    bytes.forEach((byte, index) => {
+        const ch = String.fromCharCode(byte);
+        if (/[A-Za-z]/.test(ch) || (index > 0 && /[0-9]/.test(ch)))
+            out += ch;
+        else
+            out += '_' + byte.toString(16).padStart(2, '0');
+    });
+    return out;
+}
+
 function unitPath(serviceName: string): string {
-    return (
-        '/org/freedesktop/systemd1/unit/' +
-        serviceName.replace(/-/g, '_') +
-        '_2eservice'
-    );
+    return '/org/freedesktop/systemd1/unit/' + busLabelEscape(`${serviceName}.service`);
 }
 
 async function getUnitProperty(
@@ -38,6 +52,25 @@ async function getUnitProperty(
         [iface, prop]
     );
     return (result[0] as { v?: unknown } | undefined)?.v;
+}
+
+/**
+ * Whether a failed `systemctl <action>` means the unit does not exist.
+ *
+ * cockpit.spawn() rejects with a cockpit.ProcessError (not an Error) whose
+ * message, with `err: 'message'`, is systemctl's own stderr; the generic
+ * "exited with code N" text only appears when stderr was empty. systemctl
+ * exits 5 (start/stop/restart) or 4 (status-style queries) for an unknown
+ * unit, and enable/disable exit 1 with "Unit file ... does not exist".
+ */
+function isMissingUnitError(e: unknown, detail: string): boolean {
+    const exitStatus = (e as { exit_status?: unknown } | null)?.exit_status;
+    if (exitStatus === 4 || exitStatus === 5)
+        return true;
+    return (
+        /\b(?:code|exit status) 4\b/i.test(detail) ||
+        /\bunit (?:file )?\S+ (?:not found|could not be found|does not exist)/i.test(detail)
+    );
 }
 
 export type ToastMessage = { variant: 'success' | 'danger' | 'warning'; title: string };
@@ -99,7 +132,7 @@ export function ServiceManagementCard({ serviceName, onToast }: ServiceManagemen
             onToast({ variant: 'success', title: _('Completed: {0}').replace('{0}', label) });
         } catch (e: unknown) {
             let detail = e instanceof Error ? e.message : String(e);
-            if (/(\bcode \b4\b|exit status 4|exited with code 4)/i.test(detail)) {
+            if (isMissingUnitError(e, detail)) {
                 detail = _(
                     'Unit {0}.service was not found. Install the package that provides this unit (or create the unit file), then refresh this page.'
                 ).replace('{0}', serviceName);

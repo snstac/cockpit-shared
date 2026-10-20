@@ -16,9 +16,11 @@ const ASSIGN_RE = /^([A-Za-z0-9_]+)=(.*)$/;
 
 function stripWrappingQuotes(value: string): string {
     if (value.length >= 2) {
+        // systemd EnvironmentFile double-quote escapes, decoded in a single
+        // pass so an escaped backslash cannot pair with the next character.
+        // Mirrors shellQuoteValue().
         if (value.startsWith('"') && value.endsWith('"'))
-            return value.slice(1, -1).replace(/\\"/g, '"')
-                    .replace(/\\\\/g, '\\');
+            return value.slice(1, -1).replace(/\\(["\\$`])/g, '$1');
         if (value.startsWith("'") && value.endsWith("'"))
             return value.slice(1, -1);
     }
